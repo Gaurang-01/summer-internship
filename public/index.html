@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Attendance Dashboard</title>
+  <!-- Google Fonts & Stylesheet -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>QR Attendance Hub</h1>
+    <p>Dynamic, time-limited QR codes & student check-in simulator</p>
+  </header>
+
+  <div class="container">
+    
+    <!-- Left Card: Faculty Session Control & QR Generator -->
+    <div class="card">
+      <h2>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+        Session Controls (Faculty)
+      </h2>
+      <div class="form-group">
+        <label for="classId">Class/Event ID</label>
+        <input type="text" id="classId" value="CS101" placeholder="e.g. CS101, WEB_DEV_1">
+      </div>
+      <div class="form-group">
+        <label for="facultyId">Faculty ID</label>
+        <input type="text" id="facultyId" value="fac_1" placeholder="e.g. fac_1, prof_jones">
+      </div>
+      <div class="form-group">
+        <label for="expirySeconds">QR Expiration (Seconds)</label>
+        <select id="expirySeconds">
+          <option value="15">15 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="60" selected>60 seconds (1 minute)</option>
+          <option value="120">120 seconds (2 minutes)</option>
+          <option value="300">300 seconds (5 minutes)</option>
+        </select>
+      </div>
+      <button id="btnGenerate" class="pulse">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+        Generate Dynamic QR Code
+      </button>
+
+      <!-- QR Display Sub-Container -->
+      <div class="qr-container" id="qrContainer">
+        <!-- Overlay for Expiry -->
+        <div class="qr-overlay" id="qrOverlay">
+          <div class="qr-overlay-text">QR Code Expired</div>
+          <button id="btnRegenerate" style="width: auto;" class="btn-secondary">Generate New QR</button>
+        </div>
+
+        <div class="qr-placeholder" id="qrPlaceholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 12h.01"/></svg>
+          <p>No active QR code generated.<br>Fill the form above and click Generate.</p>
+        </div>
+
+        <img src="" alt="QR Code" class="qr-image" id="qrImage" style="display: none;">
+        
+        <!-- Timer -->
+        <div class="timer-container" id="timerContainer">
+          <div class="timer-bar-bg">
+            <div class="timer-bar-fill" id="timerBar"></div>
+          </div>
+          <div class="timer-text">
+            <span>Scan before expiry</span>
+            <span class="timer-value" id="timerText">0s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Card: Student Scan Simulator -->
+    <div class="card">
+      <h2>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Scan Simulator (Student)
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5;">
+        Simulates a student scanning the QR code with their mobile device. The app extracts the secure signed token and posts it along with the student credentials.
+      </p>
+
+      <div class="form-group">
+        <label for="simToken">Secured JWT Token (Auto-populated)</label>
+        <input type="text" id="simToken" readonly placeholder="Token will be loaded when QR is generated..." style="background: rgba(15, 23, 42, 0.3); color: var(--text-muted); font-family: monospace; font-size: 0.8rem;">
+      </div>
+
+      <div class="form-group">
+        <label for="simStudentId">Student ID</label>
+        <input type="text" id="simStudentId" value="stu_001" placeholder="e.g. stu_001, John_Doe">
+      </div>
+
+      <button id="btnScan" class="btn-secondary" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        Submit Scan Check-in
+      </button>
+
+      <div class="simulator-feedback success" id="simFeedbackSuccess">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="simFeedbackSuccessText">Check-in recorded!</span>
+      </div>
+
+      <div class="simulator-feedback error" id="simFeedbackError">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="simFeedbackErrorText">Scan failed.</span>
+      </div>
+    </div>
+
+    <!-- Bottom Log: Live Attendance Log -->
+    <div class="card log-section">
+      <div class="log-header">
+        <h2>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Live Check-in Log
+        </h2>
+        <div class="refresh-badge">
+          <div class="refresh-spinner"></div>
+          <span>Auto-refreshing</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Class ID</th>
+              <th>Session ID</th>
+              <th>Check-in Time</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+        
+        <div class="empty-state" id="emptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h6"/><path d="M9 11h6"/></svg>
+          <p>No check-in logs found. Generate a QR code and submit a scan to start logging attendance.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Client-side script file -->
+  <script src="app.js"></script>
+</body>
+</html>
